@@ -20,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const th = document.createElement('th');
         th.classList.add('column-header-cell'); // Add a class for styling/selection
 
+        const headerContainer = document.createElement('div');
+        headerContainer.style.display = 'flex';
+        headerContainer.style.alignItems = 'center';
+        headerContainer.style.gap = '5px'; // Add some spacing between input and button
+
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = `Column ${index + 1}`;
@@ -27,21 +32,23 @@ document.addEventListener('DOMContentLoaded', () => {
         input.dataset.colIndex = index;
         input.addEventListener('input', saveDataToLocalStorage); // Save header changes
 
-        th.appendChild(input);
+        headerContainer.appendChild(input);
 
         // Add remove column button if current columns > MIN_COLUMNS
         const currentColumnCount = tableHeaderRow.children.length - 1; // Number of existing data columns before this one is added
-        if (currentColumnCount >= MIN_COLUMNS) { // Check if we are at or beyond the 3rd column (index 2 for 0-based)
+        if (currentColumnCount >= MIN_COLUMNS) {
             const removeColBtn = document.createElement('button');
-            removeColBtn.textContent = '-'; // Simple minus sign
+            removeColBtn.textContent = 'x'; // Simple minus sign
             removeColBtn.classList.add('remove-column-btn');
             removeColBtn.title = `Remove Column ${index + 1}`;
             removeColBtn.addEventListener('click', (event) => {
                 event.stopPropagation(); // Prevent input click when button is clicked
-                removeColumn(removeColBtn.parentElement.cellIndex); // Get the index of the column to remove
+                removeColumn(removeColBtn.parentElement.parentElement.cellIndex); // Get the index of the column to remove
             });
-            th.appendChild(removeColBtn);
+            headerContainer.appendChild(removeColBtn);
         }
+
+        th.appendChild(headerContainer);
 
         return th;
     }
