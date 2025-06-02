@@ -1,0 +1,93 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#controls {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+#controls label, #controls input, #controls button {
+    margin-right: 10px;
+}
+
+#wordlist-container {
+    overflow-x: auto; /* Allows horizontal scrolling for many columns */
+}
+
+#wordListTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#wordListTable th, #wordListTable td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#wordListTable th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+#wordListTable input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    box-sizing: border-box; /* Include padding in element's total width/height */
+    border: none;
+    background: transparent;
+    font-size: 1em;
+}
+
+#wordListTable td.delete-column {
+    text-align: center;
+    width: 40px; /* Adjust as needed */
+}
+
+#wordListTable .delete-row-btn {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+#wordListTable .delete-row-btn:hover {
+    background-color: #cc0000;
+}
+
+footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+/* Ad Placement Placeholder */
+.ad-container {
+    margin-top: 20px;
+    text-align: center;
+    border: 1px dashed #ccc;
+    padding: 20px;
+    background-color: #eee;
+}
