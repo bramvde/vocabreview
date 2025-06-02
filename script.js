@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add remove column button if current columns > MIN_COLUMNS
         const currentColumnCount = tableHeaderRow.children.length - 1; // Number of existing data columns before this one is added
-        if (currentColumnCount >= MIN_COLUMNS) {
+        if (currentColumnCount > MIN_COLUMNS) {
             const removeColBtn = document.createElement('button');
             removeColBtn.textContent = 'x'; // Simple minus sign
             removeColBtn.classList.add('remove-column-btn');
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const deleteTd = document.createElement('td');
         deleteTd.classList.add('delete-column');
         const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'X';
+        deleteBtn.textContent = 'x';
         deleteBtn.classList.add('delete-row-btn');
         deleteBtn.addEventListener('click', () => {
             tr.remove();
@@ -246,22 +246,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 removeBtn.style.display = currentColumnCount > MIN_COLUMNS ? 'inline-block' : 'none';
                 removeBtn.title = `Remove Column ${index + 1}`;
             } else if (currentColumnCount > MIN_COLUMNS && index >= MIN_COLUMNS) {
-                // If button doesn't exist but should (e.g., loaded old data, or dynamically added columns)
-                // Recreate headers for all columns to ensure buttons are present or absent as needed.
-                // This is a bit heavy-handed, but ensures consistency.
-                // A more optimized approach would be to only add/remove button for the affected TH.
-                // For simplicity, we'll just check if it's there.
-                // For existing THs, createColumnHeader doesn't get called directly, so we need to add the button here
-                if (th.children.length < 2 && currentColumnCount > MIN_COLUMNS) { // Check if button is missing
+                // Ensure the remove button exists for columns that should have it
+                if (!th.querySelector('.remove-column-btn')) { // Check if button is missing
                     const removeColBtn = document.createElement('button');
-                    removeColBtn.textContent = '-'; // Simple minus sign
+                    removeColBtn.textContent = 'x'; // Simple minus sign
                     removeColBtn.classList.add('remove-column-btn');
                     removeColBtn.title = `Remove Column ${index + 1}`;
+                    removeColBtn.style.display = 'inline-block'; // Ensure consistent display
                     removeColBtn.addEventListener('click', (event) => {
                         event.stopPropagation();
                         removeColumn(index);
                     });
-                    th.appendChild(removeColBtn);
+                    th.querySelector('div').appendChild(removeColBtn); // Append to the header container
                 }
             }
         });
@@ -336,7 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
     addColumnBtn.addEventListener('click', addColumn);
-    // removeLastColumnBtn.addEventListener('click', removeLastColumn); // REMOVE THIS LINE
     addRowBtn.addEventListener('click', () => addRow());
     clearAllBtn.addEventListener('click', clearAllData);
     saveLocalBtn.addEventListener('click', saveDataToLocalStorage);
