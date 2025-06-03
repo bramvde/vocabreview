@@ -83,11 +83,26 @@ footer {
     color: #666;
 }
 
-/* Ad Placement Placeholder */
+
 .ad-container {
     margin-top: 20px;
     text-align: center;
     border: 1px dashed #ccc;
     padding: 20px;
     background-color: #eee;
+}
+
+.content-wrapper {
+    max-width: 1200px; /* Adjust width as needed */
+    margin: 0 auto; /* Centers the content */
+    padding: 20px 20px; /* Adds white space on the sides and top/bottom */
+    background-color: #fff; /* Optional: Add a background color */
+}
+
+
+.wordlist-name input {
+    padding: 5px;
+    font-size: 1rem;
+    width: 100%; /* Adjust width as needed */
+    max-width: 300px; /* Optional: Limit the width */
 }

@@ -12,37 +12,45 @@
         <p>Your customizable word list tool.</p>
     </header>
 
-    <main>
-        <section id="controls">
-            <button id="addColumn">Add Column</button>
-            <button id="addRow">Add Row</button>
-            <button id="clearAll">Clear All</button>
+    <div class="content-wrapper">
+        <main>
+            <section id="controls">
+                <button id="addColumn">Add Column</button>
+                <button id="addRow">Add Row</button>
+                <button id="clearAll">Clear All</button>
 
-            <div class="save-load-options">
-                <button id="saveLocal" style="display:none">Save to Browser</button>
-                <button id="loadLocal" style="display:none">Load from Browser</button>
-                <button id="exportCSV">Export as CSV</button>
-                <input type="file" id="importCSV" accept=".csv" style="display: none;">
-                <button id="importCSVBtn">Import CSV</button>
+                <div class="save-load-options">
+                    <button id="saveLocal" style="display:none">Save to Browser</button>
+                    <button id="loadLocal" style="display:none">Load from Browser</button>
+                    <button id="exportCSV">Export as CSV</button>
+                    <input type="file" id="importCSV" accept=".csv" style="display: none;">
+                    <button id="importCSVBtn">Import CSV</button>
+                </div>
+            </section>
+
+            <section id="wordlist-name"></section>
+            <div class="wordlist-name">
+                <input type="text" id="wordlistName" placeholder="Unnamed list">
             </div>
-        </section>
+            </section>
 
-        <section id="wordlist-container">
-            <table id="wordListTable">
-                <thead>
-                    <tr id="tableHeader">
-                        </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
-        </section>
-    </main>
+            <section id="wordlist-container">
+                <table id="wordListTable">
+                    <thead>
+                        <tr id="tableHeader">
+                            </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </section>
+        </main>
 
+    </div>
     <footer>
         <p>&copy; 2025 Vocab.review. All rights reserved. | <a href="/privacy-policy">Privacy Policy</a> | <a href="/support-us">Support Us</a></p>
-        </footer>
-
+    </footer>
+    
     <script src="script.js"></script>
 </body>
 </html>
