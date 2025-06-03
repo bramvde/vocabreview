@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wordListTable = document.getElementById('wordListTable');
     const tableHeaderRow = document.getElementById('tableHeader');
     const tableBody = wordListTable.querySelector('tbody');
+    const wordlistNameInput = document.getElementById('wordlistName');
 
     const MIN_COLUMNS = 2; // Keep a minimum of 2 columns
     const MAX_COLUMNS = 5; // Keep a maximum of 5 columns (or your desired limit)
@@ -50,7 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         th.appendChild(headerContainer);
 
-        return th;
+        tableHeaderRow.appendChild(th);
+
     }
 
     function addColumn() {
@@ -155,16 +157,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('Are you sure you want to clear all word lists? This cannot be undone.')) {
             tableBody.innerHTML = '';
             tableHeaderRow.innerHTML = ''; // Clear headers
+            wordlistNameInput.value = ''; // Clear wordlist name input
 
             // Re-initialize with MIN_COLUMNS
             for (let i = 0; i < MIN_COLUMNS; i++) {
-                tableHeaderRow.appendChild(createColumnHeader(i));
+                createColumnHeader(i);
             }
             // Add the placeholder for the delete row button
             tableHeaderRow.innerHTML += '<th></th>';
 
             addRow(); // Add initial empty row
             localStorage.removeItem('wordListData'); // Clear stored data
+
+            saveDataToLocalStorage();
         }
     }
 
@@ -178,9 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
             allRowsData.push(rowData);
         });
 
-        const columnHeaders = Array.from(tableHeaderRow.querySelectorAll('th input[type="text"]')).map(input => input.value);
+        // Robustly get header values from the input inside the header's div
+        const columnHeaders = Array.from(tableHeaderRow.querySelectorAll('.column-header-cell')).map(th => {
+            const input = th.querySelector('div > input[type="text"]');
+            return input ? input.value : '';
+        });
+
+        const wordlistName = wordlistNameInput.value || '';
 
         const dataToSave = {
+            name: wordlistName,
             headers: columnHeaders,
             rows: allRowsData
         };
@@ -193,9 +205,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedData) {
             const data = JSON.parse(savedData);
 
+            // Restore wordlist name
+            wordlistNameInput.value = data.name || '';
+
             tableHeaderRow.innerHTML = ''; // Clear existing headers
             data.headers.forEach((headerText, index) => {
-                tableHeaderRow.appendChild(createColumnHeader(index, headerText));
+                createColumnHeader(index, headerText);
             });
             // Ensure delete column header is present
             tableHeaderRow.innerHTML += '<th></th>';
@@ -209,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 addRow(paddedRowData);
             });
 
-            // If no data was loaded, or empty data, ensure at least one row
             if (data.rows.length === 0 || tableBody.children.length === 0) {
                 addRow();
             }
@@ -217,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // If no data, initialize with default MIN_COLUMNS
             tableHeaderRow.innerHTML = ''; // Clear any default HTML headers
             for (let i = 0; i < MIN_COLUMNS; i++) {
-                tableHeaderRow.appendChild(createColumnHeader(i));
+                createColumnHeader(i);
             }
             // Add the placeholder for the delete row button
             tableHeaderRow.innerHTML += '<th></th>';
@@ -230,14 +244,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateColumnHeadersDisplay() {
         const currentColumnCount = tableHeaderRow.children.length - 1; // Get actual number of data columns
         Array.from(tableHeaderRow.querySelectorAll('.column-header-cell')).forEach((th, index) => {
-            const input = th.querySelector('input');
+            const div = th.querySelector('div');
+            if (!div) return; // Skip if no div found (shouldn't happen)
+            // Ensure the input exists
+            if (!div.querySelector('input')) return; // Skip if no input found (shouldn't happen)
+            // Get the input element
+            const input = div.querySelector('input');
+            if (!input) return; // Skip if no input found (shouldn't happen)
 
             // Update placeholder and value if default (not custom by user)
             // Only update value if it still says "Column X"
             // Or if it's currently empty, to ensure default is set
-            if (input.value === '' || input.value.startsWith('Column ')) {
-                input.value = `Column ${index + 1}`;
-            }
             input.placeholder = `Column ${index + 1}`;
 
             const removeBtn = th.querySelector('.remove-column-btn');
@@ -267,6 +284,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function exportToCSV() {
         const rows = [];
+        const wordlistName = document.getElementById('wordlistName')?.value || '';
+        // Add the name as the first line
+        rows.push(`"${wordlistName.replace(/"/g, '""')}"`);
+
         const headerInputs = Array.from(tableHeaderRow.querySelectorAll('th input[type="text"]'));
         const headers = headerInputs.map(input => `"${input.value.replace(/"/g, '""')}"`);
         rows.push(headers.join(','));
@@ -280,9 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const csvContent = rows.join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
+
+        // Sanitize the wordlist name for use in a filename
+        let safeName = wordlistName.trim().replace(/[^a-z0-9_\-]+/gi, '_');
+        if (!safeName) safeName = 'vocab-review-wordlist';
+        const filename = `${safeName}-${new Date().toISOString().split('T')[0]}.csv`;
+
         const a = document.createElement('a');
         a.href = url;
-        a.download = `vocab-review-wordlist-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -298,12 +325,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const csvText = e.target.result;
             const lines = csvText.split('\n').filter(line => line.trim() !== '');
 
-            if (lines.length === 0) {
+            if (lines.length < 2) {
                 alert('CSV file is empty or malformed.');
                 return;
             }
 
-            const headerValues = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+            // First line is the name
+            const nameLine = lines[0];
+            const wordlistName = nameLine.replace(/^"|"$/g, '').replace(/""/g, '"');
+            const headerValues = lines[1].split(',').map(h => h.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
             const newNumColumns = headerValues.length;
 
             if (newNumColumns < MIN_COLUMNS || newNumColumns > MAX_COLUMNS) {
@@ -311,14 +341,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Set the name in the input
+            const nameInput = document.getElementById('wordlistName');
+            if (nameInput) nameInput.value = wordlistName;
+
             tableHeaderRow.innerHTML = '';
             headerValues.forEach((val, index) => {
-                tableHeaderRow.appendChild(createColumnHeader(index, val));
+                createColumnHeader(index, val);
             });
             tableHeaderRow.innerHTML += '<th></th>';
 
             tableBody.innerHTML = '';
-            for (let i = 1; i < lines.length; i++) {
+            for (let i = 2; i < lines.length; i++) { // Start from line 2 (after name and header)
                 const rowValues = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
                 const paddedRowValues = Array(newNumColumns).fill('').map((_, idx) => rowValues[idx] || '');
                 addRow(paddedRowValues);
@@ -339,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     exportCSVBtn.addEventListener('click', exportToCSV);
     importCSVBtn.addEventListener('click', () => importCSVInput.click());
     importCSVInput.addEventListener('change', importFromCSV);
+    wordlistNameInput.addEventListener('input', saveDataToLocalStorage);
 
     // Initial setup
     loadDataFromLocalStorage(); // Attempt to load saved data on page load
