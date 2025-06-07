@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableHeaderRow = document.getElementById('tableHeader');
     const tableBody = wordListTable.querySelector('tbody');
     const wordlistNameInput = document.getElementById('wordlistName');
+    const configureQuizBtn = document.getElementById('configureQuiz');
 
     const MIN_COLUMNS = 2; // Keep a minimum of 2 columns
     const MAX_COLUMNS = 5; // Keep a maximum of 5 columns (or your desired limit)
@@ -31,7 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
         input.placeholder = `Column ${index + 1}`;
         input.value = headerText; // Default or provided header text
         input.dataset.colIndex = index;
-        input.addEventListener('input', saveDataToLocalStorage); // Save header changes
+        input.addEventListener('input', (event) => {
+            console.log('Header input changed'); // Debug
+            saveDataToLocalStorage();
+        });
+
 
         headerContainer.appendChild(input);
 
@@ -51,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         th.appendChild(headerContainer);
 
-        tableHeaderRow.appendChild(th);
+        return th;
 
     }
 
@@ -161,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Re-initialize with MIN_COLUMNS
             for (let i = 0; i < MIN_COLUMNS; i++) {
-                createColumnHeader(i);
+                tableHeaderRow.appendChild(createColumnHeader(i));
             }
             // Add the placeholder for the delete row button
             tableHeaderRow.innerHTML += '<th></th>';
@@ -210,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHeaderRow.innerHTML = ''; // Clear existing headers
             data.headers.forEach((headerText, index) => {
-                createColumnHeader(index, headerText);
+                tableHeaderRow.appendChild(createColumnHeader(index, headerText));
             });
             // Ensure delete column header is present
             tableHeaderRow.innerHTML += '<th></th>';
@@ -231,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // If no data, initialize with default MIN_COLUMNS
             tableHeaderRow.innerHTML = ''; // Clear any default HTML headers
             for (let i = 0; i < MIN_COLUMNS; i++) {
-                createColumnHeader(i);
+                tableHeaderRow.appendChild(createColumnHeader(i));
             }
             // Add the placeholder for the delete row button
             tableHeaderRow.innerHTML += '<th></th>';
@@ -347,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHeaderRow.innerHTML = '';
             headerValues.forEach((val, index) => {
-                createColumnHeader(index, val);
+                tableHeaderRow.appendChild(createColumnHeader(index, val));
             });
             tableHeaderRow.innerHTML += '<th></th>';
 
@@ -363,6 +368,160 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 
+    function configureQuiz() {
+        // Create overlay background
+        let overlay = document.getElementById('quiz-config-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'quiz-config-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = 0;
+            overlay.style.left = 0;
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.background = 'rgba(0,0,0,0.5)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = 1000;
+            document.body.appendChild(overlay);
+        }
+        overlay.innerHTML = ''; // Clear previous content
+
+        // Create modal box
+        const modal = document.createElement('div');
+        modal.style.background = '#fff';
+        modal.style.padding = '24px';
+        modal.style.borderRadius = '8px';
+        modal.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
+        modal.style.minWidth = '340px';
+        modal.style.maxWidth = '95vw';
+
+        // Get headers
+        const headers = Array.from(tableHeaderRow.querySelectorAll('.column-header-cell input')).map(input => input.value || input.placeholder);
+
+        // Try to load previous config from sessionStorage
+        let prevConfig = null;
+        try {
+            prevConfig = JSON.parse(sessionStorage.getItem('quizConfig'));
+        } catch (e) {
+            prevConfig = null;
+        }
+
+        // Build table for selection
+        let tableHtml = `<table style="border-collapse:collapse;margin-bottom:16px;">
+            <thead>
+                <tr>
+                    <th style="padding:4px 8px;border-bottom:1px solid #ccc;"></th>
+                    ${headers.map((h, i) => `<th style="padding:4px 8px;border-bottom:1px solid #ccc;">${h}</th>`).join('')}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:4px 8px;">Question</td>
+                    ${headers.map((_, i) => `<td style="text-align:center;"><input type="checkbox" class="quiz-question-col" data-col="${i}"></td>`).join('')}
+                </tr>
+                <tr>
+                    <td style="padding:4px 8px;">Answer</td>
+                    ${headers.map((_, i) => `<td style="text-align:center;"><input type="checkbox" class="quiz-answer-col" data-col="${i}"></td>`).join('')}
+                </tr>
+            </tbody>
+        </table>`;
+
+        modal.innerHTML = `
+            <h2>Configure Quiz</h2>
+            ${tableHtml}
+            <label>
+                <input type="checkbox" id="quiz-random-order" checked>
+                Randomize question order
+            </label>
+            <br><br>
+            <button id="quiz-config-ok">OK</button>
+            <button id="quiz-config-cancel">Cancel</button>
+            <div id="quiz-config-error" style="color:red;margin-top:8px;display:none;"></div>
+        `;
+
+        // Set checkboxes based on previous config, or use defaults
+        const questionChecks = modal.querySelectorAll('.quiz-question-col');
+        const answerChecks = modal.querySelectorAll('.quiz-answer-col');
+        const randomOrderCheckbox = modal.querySelector('#quiz-random-order');
+
+        if (prevConfig && Array.isArray(prevConfig.questionCols) && Array.isArray(prevConfig.answerCols)) {
+            questionChecks.forEach((chk, idx) => {
+                chk.checked = prevConfig.questionCols.includes(idx);
+            });
+            answerChecks.forEach((chk, idx) => {
+                chk.checked = prevConfig.answerCols.includes(idx);
+            });
+            if (typeof prevConfig.randomOrder === 'boolean') {
+                randomOrderCheckbox.checked = prevConfig.randomOrder;
+            }
+        } else {
+            // Default: first column as question, second as answer if possible
+            if (headers.length > 0) {
+                questionChecks[0].checked = true;
+            }
+            if (headers.length > 1) {
+                answerChecks[1].checked = true;
+            }
+            randomOrderCheckbox.checked = true;
+        }
+
+        // Prevent a column from being both question and answer at the same time
+        function syncCheckboxes() {
+            questionChecks.forEach((qChk, idx) => {
+                qChk.addEventListener('change', () => {
+                    if (qChk.checked) {
+                        answerChecks[idx].checked = false;
+                    }
+                });
+            });
+            answerChecks.forEach((aChk, idx) => {
+                aChk.addEventListener('change', () => {
+                    if (aChk.checked) {
+                        questionChecks[idx].checked = false;
+                    }
+                });
+            });
+        }
+        syncCheckboxes();
+
+        // Button handlers
+        modal.querySelector('#quiz-config-cancel').onclick = () => {
+            overlay.remove();
+        };
+        modal.querySelector('#quiz-config-ok').onclick = () => {
+            // Gather selected columns
+            const questionCols = Array.from(questionChecks)
+                .map((chk, idx) => chk.checked ? idx : null)
+                .filter(idx => idx !== null);
+            const answerCols = Array.from(answerChecks)
+                .map((chk, idx) => chk.checked ? idx : null)
+                .filter(idx => idx !== null);
+
+            const errorDiv = modal.querySelector('#quiz-config-error');
+            if (questionCols.length === 0 || answerCols.length === 0) {
+                errorDiv.textContent = 'Please select at least one question column and one answer column.';
+                errorDiv.style.display = '';
+                return;
+            }
+            errorDiv.style.display = 'none';
+
+            // Build config object
+            const config = {
+                questionCols,
+                answerCols,
+                randomOrder: randomOrderCheckbox.checked
+            };
+            // Save to sessionStorage
+            sessionStorage.setItem('quizConfig', JSON.stringify(config));
+            overlay.remove();
+        };
+
+        overlay.appendChild(modal);
+    }
+    
+
 
     // --- Event Listeners ---
     addColumnBtn.addEventListener('click', addColumn);
@@ -374,6 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
     importCSVBtn.addEventListener('click', () => importCSVInput.click());
     importCSVInput.addEventListener('change', importFromCSV);
     wordlistNameInput.addEventListener('input', saveDataToLocalStorage);
+    configureQuizBtn.addEventListener('click', configureQuiz);
 
     // Initial setup
     loadDataFromLocalStorage(); // Attempt to load saved data on page load

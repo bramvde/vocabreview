@@ -1,56 +1,84 @@
 <!DOCTYPE html>
+
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Vocab.review - Custom Word Lists</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
     <header>
-        <h1>Vocab.review</h1>
-        <p>Your customizable word list tool.</p>
+      <h1>Vocab.review</h1>
+
+      <p>Your customizable word list tool.</p>
     </header>
 
     <div class="content-wrapper">
-        <main>
-            <section id="controls">
-                <button id="addColumn">Add Column</button>
-                <button id="addRow">Add Row</button>
-                <button id="clearAll">Clear All</button>
+      <main>
+        <section id="controls">
+          <button id="addColumn">Add Column</button>
 
-                <div class="save-load-options">
-                    <button id="saveLocal" style="display:none">Save to Browser</button>
-                    <button id="loadLocal" style="display:none">Load from Browser</button>
-                    <button id="exportCSV">Export as CSV</button>
-                    <input type="file" id="importCSV" accept=".csv" style="display: none;">
-                    <button id="importCSVBtn">Import CSV</button>
-                </div>
-            </section>
+          <button id="addRow">Add Row</button>
 
-            <section id="wordlist-name"></section>
-            <div class="wordlist-name">
-                <input type="text" id="wordlistName" placeholder="Unnamed list">
-            </div>
-            </section>
+          <button id="clearAll">Clear All</button>
 
-            <section id="wordlist-container">
-                <table id="wordListTable">
-                    <thead>
-                        <tr id="tableHeader">
-                            </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </section>
-        </main>
+          <div class="save-load-options">
+            <button id="saveLocal" style="display: none">
+              Save to Browser
+            </button>
 
+            <button id="loadLocal" style="display: none">
+              Load from Browser
+            </button>
+
+            <button id="exportCSV">Export as CSV</button>
+
+            <input
+              type="file"
+              id="importCSV"
+              accept=".csv"
+              style="display: none"
+            />
+
+            <button id="importCSVBtn">Import CSV</button>
+
+            <button id="configureQuiz">Configure Quiz</button>
+
+            <button id="startQuiz">Start Quiz</button>
+          </div>
+        </section>
+
+        <section id="wordlist-name">
+          <div class="wordlist-name">
+            <input type="text" id="wordlistName" placeholder="Unnamed list" />
+          </div>
+        </section>
+
+        <section id="wordlist-container">
+          <table id="wordListTable">
+            <thead>
+              <tr id="tableHeader"></tr>
+            </thead>
+
+            <tbody></tbody>
+          </table>
+        </section>
+      </main>
     </div>
+
     <footer>
-        <p>&copy; 2025 Vocab.review. All rights reserved. | <a href="/privacy-policy">Privacy Policy</a> | <a href="/support-us">Support Us</a></p>
+      <p>
+        &copy; 2025 Vocab.review. All rights reserved. |
+        <a href="/privacy-policy">Privacy Policy</a> |
+        <a href="/support-us">Support Us</a>
+      </p>
     </footer>
-    
+
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
