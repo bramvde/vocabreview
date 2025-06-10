@@ -19,8 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const MIN_COLUMNS = 2; // Keep a minimum of 2 columns
     const MAX_COLUMNS = 5; // Keep a maximum of 5 columns (or your desired limit)
 
-    tableHeaderRow.innerHTML = ''; // Clear any default HTML headers
-
     // --- Core Table Management Functions ---
 
     function createColumnHeader(index, headerText = `Column ${index + 1}`) {
@@ -36,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.type = 'text';
         input.placeholder = `Column ${index + 1}`;
         input.value = headerText; // Set initial value
-        input.setAttribute('value', headerText); // Set initial value
         input.dataset.colIndex = index;
         input.addEventListener('input', saveDataToLocalStorage) // FIX: this doesn't work with dynamic columns
 
@@ -172,7 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableHeaderRow.appendChild(createColumnHeader(i));
             }
             // Add the placeholder for the delete row button
-            tableHeaderRow.innerHTML += '<th></th>';
+            const emptyTh = document.createElement('th');
+            tableHeaderRow.appendChild(emptyTh);
+
 
             addRow(); // Add initial empty row
             localStorage.removeItem('wordListData'); // Clear stored data
@@ -222,7 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableHeaderRow.appendChild(newTh);
             });
             // Ensure delete column header is present
-            tableHeaderRow.innerHTML += '<th></th>';
+            const emptyTh = document.createElement('th');
+            tableHeaderRow.appendChild(emptyTh);
 
 
             // Load Rows
@@ -243,7 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableHeaderRow.appendChild(createColumnHeader(i));
             }
             // Add the placeholder for the delete row button
-            tableHeaderRow.innerHTML += '<th></th>';
+            const emptyTh = document.createElement('th');
+            tableHeaderRow.appendChild(emptyTh);
             addRow(); // Add an initial empty row
         }
         updateColumnHeadersDisplay(); // Ensure visibility of remove buttons is correct on load
@@ -385,7 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
             headerValues.forEach((val, index) => {
                 tableHeaderRow.appendChild(createColumnHeader(index, val));
             });
-            tableHeaderRow.innerHTML += '<th></th>';
+            const emptyTh = document.createElement('th');
+            tableHeaderRow.appendChild(emptyTh);
+
 
             tableBody.innerHTML = '';
             for (let i = 2; i < lines.length; i++) { // Start from line 2 (after name and header)
