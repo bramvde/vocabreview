@@ -20,6 +20,7 @@
 
     <div class="content-wrapper">
       <main>
+        <section id="list-section">
         <section id="controls">
           <button id="addColumn">Add Column</button>
 
@@ -68,6 +69,34 @@
             <tbody></tbody>
           </table>
         </section>
+      </section>
+
+      <section id="quiz-section" style="display: none">
+        <h2 id="quizName">Quiz</h2>
+
+        <!-- Progress Bar -->
+        <div id="quizProgressBarContainer">
+          <div id="quizProgressBar">
+        <div id="quizProgressFill"></div>
+          </div>
+          <div id="quizProgressText">0 / 0</div>
+        </div>
+        
+        <div id="quizContent">
+        </div>
+
+        <div id="quizControls">
+          <button id="nextQuestion">Next Question</button>
+          <button id="endQuiz">End Quiz</button>
+        </div>
+        
+
+        <div id="quizResults" style="display: none">
+          <h3>Quiz Results</h3>
+          <p id="correctAnswers"></p>
+          <p id="totalQuestions"></p>
+        </div>
+      </section>
       </main>
     </div>
 

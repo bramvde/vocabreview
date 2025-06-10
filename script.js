@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableBody = wordListTable.querySelector('tbody');
     const wordlistNameInput = document.getElementById('wordlistName');
     const configureQuizBtn = document.getElementById('configureQuiz');
+    const startQuizBtn = document.getElementById('startQuiz');
+    const endQuizBtn = document.getElementById('endQuiz');
+    const quizSection = document.getElementById('quiz-section');
 
     const MIN_COLUMNS = 2; // Keep a minimum of 2 columns
     const MAX_COLUMNS = 5; // Keep a maximum of 5 columns (or your desired limit)
@@ -493,25 +496,31 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.querySelector('#quiz-config-ok').onclick = () => {
             // Gather selected columns
             const questionCols = Array.from(questionChecks)
-                .map((chk, idx) => chk.checked ? idx : null)
-                .filter(idx => idx !== null);
+            .map((chk, idx) => chk.checked ? idx : null)
+            .filter(idx => idx !== null);
             const answerCols = Array.from(answerChecks)
-                .map((chk, idx) => chk.checked ? idx : null)
-                .filter(idx => idx !== null);
+            .map((chk, idx) => chk.checked ? idx : null)
+            .filter(idx => idx !== null);
 
             const errorDiv = modal.querySelector('#quiz-config-error');
             if (questionCols.length === 0 || answerCols.length === 0) {
-                errorDiv.textContent = 'Please select at least one question column and one answer column.';
-                errorDiv.style.display = '';
-                return;
+            errorDiv.textContent = 'Please select at least one question column and one answer column.';
+            errorDiv.style.display = '';
+            return;
             }
             errorDiv.style.display = 'none';
 
+            // Also store the names of the selected columns
+            const questionColNames = questionCols.map(idx => headers[idx]);
+            const answerColNames = answerCols.map(idx => headers[idx]);
+
             // Build config object
             const config = {
-                questionCols,
-                answerCols,
-                randomOrder: randomOrderCheckbox.checked
+            questionCols,
+            answerCols,
+            questionColNames,
+            answerColNames,
+            randomOrder: randomOrderCheckbox.checked
             };
             // Save to sessionStorage
             sessionStorage.setItem('quizConfig', JSON.stringify(config));
@@ -520,8 +529,228 @@ document.addEventListener('DOMContentLoaded', () => {
 
         overlay.appendChild(modal);
     }
-    
 
+    function startQuiz() {
+        // Get the quiz configuration from sessionStorage
+        let quizConfig;
+        try {
+            quizConfig = JSON.parse(sessionStorage.getItem('quizConfig'));
+        } catch (e) {
+            alert('Quiz configuration is invalid or not set. Please configure the quiz first.');
+            return;
+        }
+
+        // Get the wordlist from localStorage
+        const savedData = localStorage.getItem('wordListData');
+        if (!savedData) {
+            alert('No word list data found. Please create or load a word list first.');
+            return;
+        }
+        const data = JSON.parse(savedData);
+
+        // Set the quiz name
+        document.getElementById('quizName').textContent = data.name + " - QUIZ" || 'Vocabulary Quiz';
+
+        // Clear previous quiz content
+        const quizContent = document.getElementById('quizContent');
+        quizContent.innerHTML = ''; // Clear previous content
+        const questionCols = quizConfig.questionCols || [];
+        const answerCols = quizConfig.answerCols || [];
+        const questionColsNames = quizConfig.questionColNames || [];
+        const answerColsNames = quizConfig.answerColNames || [];
+        const randomOrder = quizConfig.randomOrder || false;
+        const rows = data.rows || [];
+        if (rows.length === 0) {
+            alert('No words available for the quiz. Please add words to your word list.');
+            return;
+        }
+        // Create an array of questions based on the selected columns
+        let questions = [];
+        rows.forEach((row, rowIndex) => {
+            // Gather all question column values for this row
+            const questionFields = questionCols.map(qColIndex => row[qColIndex] || '');
+            // Gather all answer column values for this row
+            const answerFields = answerCols.map(aColIndex => row[aColIndex] || '');
+            // Only add if at least one question and one answer field is non-empty
+            if (questionFields.some(q => q) && answerFields.some(a => a)) {
+            questions.push({
+                question: questionFields,
+                answers: answerFields,
+                rowIndex: rowIndex
+            });
+            }
+        });
+        if (questions.length === 0) {
+            alert('No valid questions found in the selected columns. Please check your word list.');
+            return;
+        }
+        // Randomize the order of questions if configured
+        if (randomOrder) {
+            questions.sort(() => Math.random() - 0.5);
+        }
+
+        // Initiate quiz
+
+        const quizContainer = document.getElementById('quizContent');
+        quizContainer.innerHTML = ''; // Clear previous quiz content
+
+        // Create space for feedback (reserve space to prevent layout shift)
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.id = 'quizFeedback';
+        feedbackDiv.style.marginBottom = '16px';
+        feedbackDiv.style.minHeight = '24px'; // Reserve space for one line of feedback
+        quizContainer.appendChild(feedbackDiv);
+        
+        // Create question element depending on the number of question columns
+        questionCols.forEach((qColIndex, qIndex) => {
+            const questionDiv = document.createElement('div');
+            questionDiv.classList.add('quiz-question');
+            questionDiv.innerHTML = `<strong>${questionColsNames[qIndex]}:</strong> <span class="question-text"></span>`;
+            quizContainer.appendChild(questionDiv);
+        }
+        );
+
+        // Create answer elements depending on the number of answer columns
+        answerCols.forEach((aColIndex, aIndex) => {
+            const answerDiv = document.createElement('div');
+            answerDiv.classList.add('quiz-answer');
+            answerDiv.innerHTML = `<input type="text" class="answer-input" placeholder="Type your answer here...">`;
+            quizContainer.appendChild(answerDiv);
+        });
+
+        updateProgressBar(0, questions.length); // Initialize progress bar
+
+        // Add Enter key handler to answer inputs
+        setTimeout(() => {
+            const answerInputs = Array.from(document.querySelectorAll('.quiz-answer .answer-input'));
+            answerInputs.forEach((input, idx) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                e.preventDefault();
+                if (idx === answerInputs.length - 1) {
+                    // Last input: trigger "Next"
+                    document.getElementById('nextQuestion').click();
+                    // After moving to next question, focus the first input
+                    setTimeout(() => {
+                    const newInputs = Array.from(document.querySelectorAll('.quiz-answer .answer-input'));
+                    if (newInputs[0]) newInputs[0].focus();
+                    }, 0);
+                } else {
+                    // Not last: focus next input
+                    answerInputs[idx + 1].focus();
+                }
+                }
+            });
+            });
+        }, 0);
+
+        // Real Quiz logic
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0;
+        const questionTextElements = document.querySelectorAll('.quiz-question .question-text');
+        const answerInputs = document.querySelectorAll('.quiz-answer .answer-input');
+        const nextButton = document.getElementById('nextQuestion');
+        nextButton.textContent = 'Next';
+        nextButton.classList.add('quiz-next-button');
+        nextButton.addEventListener('click', () => {
+            // Check answers
+            let allCorrect = true;
+            answerInputs.forEach((input, index) => {
+            const answer = input.value.trim();
+            const correctAnswer = questions[currentQuestionIndex].answers[index] || '';
+            if (answer.toLowerCase() === correctAnswer.toLowerCase()) {
+                input.classList.remove('incorrect');
+                input.classList.add('correct');
+            } else {
+                input.classList.remove('correct');
+                input.classList.add('incorrect');
+                allCorrect = false;
+            }
+            });
+
+            // Only increment score if all answers are correct for this question
+            if (allCorrect) {
+            correctAnswers++;
+            feedbackDiv.innerHTML = '<span style="color:green;font-weight:bold;">&#10003; Correct!</span>';
+            } else {
+            feedbackDiv.innerHTML = `<span style="color:red;font-weight:bold;">&#10007; Incorrect! Correct answer: ${questions[currentQuestionIndex].answers.join(', ')}</span>`;
+            // Add the current question to the end of the questions array to ask again later
+            questions.push(questions[currentQuestionIndex]);
+            }
+            updateProgressBar(currentQuestionIndex + 1, questions.length);
+
+            // Move to next question
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+            loadQuestion(currentQuestionIndex);
+            } else {
+            // End of quiz
+            showResults(correctAnswers, questions.length);
+            }
+        });
+        // Function to load a question
+        function loadQuestion(index) {
+            const question = questions[index];
+            questionTextElements.forEach((el, qIndex) => {
+                el.textContent = question.question[qIndex] || '';
+            });
+            answerInputs.forEach((input, aIndex) => {
+                input.value = ''; // Clear previous answers
+                input.placeholder = `${answerColsNames[aIndex]}...`;
+                input.classList.remove('correct', 'incorrect'); // Reset styles
+            });
+        }
+        // Load the first question
+        loadQuestion(currentQuestionIndex);
+
+        
+
+        // Show the quiz section && hide the main word list section
+        quizContent.style.display = 'block';
+        const quizControls = document.getElementById('quizControls');
+        quizControls.style.display = 'flex';
+        quizSection.style.display = 'block';
+        document.getElementById('list-section').style.display = 'none';
+        document.getElementById('quizResults').style.display = 'none';
+
+    }
+
+    function updateProgressBar(current, total) {
+        const progressFill = document.getElementById('quizProgressFill');
+        const progressText = document.getElementById('quizProgressText');
+        const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+        if (progressFill) {
+            progressFill.style.width = `${percentage}%`;
+        }
+        if (progressText) {
+            progressText.textContent = `${current} of ${total}`;
+        }
+    }
+
+    function showResults(correctAnswers, totalQuestions) {
+        const quizResults = document.getElementById('quizResults');
+        quizResults.innerHTML = `<h2>Quiz Completed!</h2>
+            <p>You answered ${correctAnswers} out of ${totalQuestions} questions correctly.</p>
+            <button id="endQuizBtn">End Quiz</button>`;
+        const endQuizBtn = document.getElementById('endQuizBtn');
+        endQuizBtn.addEventListener('click', endQuiz);
+        quizResults.style.display = 'block';
+        const quizContent = document.getElementById('quizContent');
+        quizContent.style.display = 'none';
+        const quizControls = document.getElementById('quizControls');
+        quizControls.style.display = 'none';
+    }
+
+    function endQuiz() {
+        // Hide the quiz section and show the main word list section
+        quizSection.style.display = 'none';
+        document.getElementById('list-section').style.display = 'block';
+        const quizResults = document.getElementById('quizResults');
+        quizResults.style.display = 'none'; // Hide the results section
+
+        // Clear the quiz name
+        document.getElementById('quizName').textContent = '';
+    }
 
     // --- Event Listeners ---
     addColumnBtn.addEventListener('click', addColumn);
@@ -534,7 +763,9 @@ document.addEventListener('DOMContentLoaded', () => {
     importCSVInput.addEventListener('change', importFromCSV);
     wordlistNameInput.addEventListener('input', saveDataToLocalStorage);
     configureQuizBtn.addEventListener('click', configureQuiz);
+    startQuizBtn.addEventListener('click', startQuiz);
+    endQuizBtn.addEventListener('click', endQuiz);
 
     // Initial setup
-    loadDataFromLocalStorage(); // Attempt to load saved data on page load
+    loadDataFromLocalStorage();
 });
