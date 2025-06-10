@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const MIN_COLUMNS = 2; // Keep a minimum of 2 columns
     const MAX_COLUMNS = 5; // Keep a maximum of 5 columns (or your desired limit)
 
+    tableHeaderRow.innerHTML = ''; // Clear any default HTML headers
+
     // --- Core Table Management Functions ---
 
     function createColumnHeader(index, headerText = `Column ${index + 1}`) {
@@ -33,12 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let input = document.createElement('input');
         input.type = 'text';
         input.placeholder = `Column ${index + 1}`;
-        input.value = headerText; // Default or provided header text
+        input.value = headerText; // Set initial value
+        input.setAttribute('value', headerText); // Set initial value
         input.dataset.colIndex = index;
-        input.addEventListener('input', (event) => {
-            console.log('Header input changed'); // Debug
-            saveDataToLocalStorage();
-        });
+        input.addEventListener('input', saveDataToLocalStorage) // FIX: this doesn't work with dynamic columns
 
 
         headerContainer.appendChild(input);
@@ -249,11 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateColumnHeadersDisplay(); // Ensure visibility of remove buttons is correct on load
     }
 
-    // New function to update the visibility of column delete buttons
     function updateColumnHeadersDisplay() {
         const currentColumnCount = tableHeaderRow.children.length - 1; // Get actual number of data columns
         Array.from(tableHeaderRow.querySelectorAll('.column-header-cell')).forEach((th, index) => {
-            console.log(th)
             const div = th.querySelector('div');
             if (!div) return; // Skip if no div found (shouldn't happen)
             // Ensure the input exists
