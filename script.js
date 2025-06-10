@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headerContainer.style.alignItems = 'center';
         headerContainer.style.gap = '5px'; // Add some spacing between input and button
 
-        const input = document.createElement('input');
+        let input = document.createElement('input');
         input.type = 'text';
         input.placeholder = `Column ${index + 1}`;
         input.value = headerText; // Default or provided header text
@@ -218,7 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHeaderRow.innerHTML = ''; // Clear existing headers
             data.headers.forEach((headerText, index) => {
-                tableHeaderRow.appendChild(createColumnHeader(index, headerText));
+                const newTh = createColumnHeader(index, headerText);
+                tableHeaderRow.appendChild(newTh);
             });
             // Ensure delete column header is present
             tableHeaderRow.innerHTML += '<th></th>';
@@ -252,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateColumnHeadersDisplay() {
         const currentColumnCount = tableHeaderRow.children.length - 1; // Get actual number of data columns
         Array.from(tableHeaderRow.querySelectorAll('.column-header-cell')).forEach((th, index) => {
+            console.log(th)
             const div = th.querySelector('div');
             if (!div) return; // Skip if no div found (shouldn't happen)
             // Ensure the input exists
@@ -331,21 +333,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const csvText = e.target.result;
+            const parseCsvLine = (line) => {
+                const regex = /(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^,]*))/g;
+                let matches = [];
+                let match;
+                while ((match = regex.exec(line)) !== null) {
+                    // If the first group (quoted string) is defined, use it and unescape ""
+                    if (match[1] !== undefined) {
+                        matches.push(match[1].replace(/""/g, '"'));
+                    } else if (match[2] !== undefined) { // Otherwise use the unquoted string
+                        matches.push(match[2]);
+                    }
+                }
+                // Remove the initial empty string if the line started with a comma (unlikely for first field)
+                if (matches.length > 0 && matches[0] === '') {
+                    matches.shift();
+                }
+                return matches;
+            };
+
             const lines = csvText.split('\n').filter(line => line.trim() !== '');
 
             if (lines.length < 2) {
                 alert('CSV file is empty or malformed.');
+                updateColumnHeadersDisplay();
                 return;
             }
 
             // First line is the name
             const nameLine = lines[0];
-            const wordlistName = nameLine.replace(/^"|"$/g, '').replace(/""/g, '"');
-            const headerValues = lines[1].split(',').map(h => h.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+            // Parse the name line correctly, assuming it's a single quoted field, or plain text
+            let wordlistName = nameLine;
+            // Check if it's quoted, then unquote and unescape
+            if (nameLine.startsWith('"') && nameLine.endsWith('"')) {
+                wordlistName = nameLine.substring(1, nameLine.length - 1).replace(/""/g, '"');
+            }
+
+            // Second line is the headers - use the new robust parser
+            const headerValues = parseCsvLine(lines[1]).map(h => h.trim());
             const newNumColumns = headerValues.length;
 
             if (newNumColumns < MIN_COLUMNS || newNumColumns > MAX_COLUMNS) {
                 alert(`CSV file has ${newNumColumns} columns. Please ensure between ${MIN_COLUMNS} and ${MAX_COLUMNS} columns.`);
+                updateColumnHeadersDisplay();
                 return;
             }
 
@@ -361,12 +391,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableBody.innerHTML = '';
             for (let i = 2; i < lines.length; i++) { // Start from line 2 (after name and header)
-                const rowValues = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+                // Use the new robust parser for each data row
+                const rowValues = parseCsvLine(lines[i]).map(c => c.trim());
                 const paddedRowValues = Array(newNumColumns).fill('').map((_, idx) => rowValues[idx] || '');
                 addRow(paddedRowValues);
             }
             saveDataToLocalStorage();
-            updateColumnHeadersDisplay(); // Update button visibility after import
+            updateColumnHeadersDisplay(); // Ensure visibility of remove buttons is correct after import
         };
         reader.readAsText(file);
     }
