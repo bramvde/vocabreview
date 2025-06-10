@@ -137,6 +137,29 @@ document.addEventListener('DOMContentLoaded', () => {
             input.type = 'text';
             input.value = data[i] || ''; // Populate with data if provided
             input.addEventListener('input', saveDataToLocalStorage); // Save on input change
+
+            // Handle Enter key navigation
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    // Get all input fields in tbody in order
+                    const allInputs = Array.from(tableBody.querySelectorAll('input[type="text"]'));
+                    const idx = allInputs.indexOf(input);
+                    if (idx >= 0 && idx < allInputs.length - 1) {
+                        allInputs[idx + 1].focus();
+                    } else if (idx === allInputs.length - 1) {
+                        // Last input: add new row and focus its first input
+                        addRow();
+                        setTimeout(() => {
+                            const newInputs = Array.from(tableBody.querySelectorAll('input[type="text"]'));
+                            if (newInputs.length > allInputs.length) {
+                                newInputs[allInputs.length].focus();
+                            }
+                        }, 0);
+                    }
+                }
+            });
+
             td.appendChild(input);
             tr.appendChild(td);
         }
